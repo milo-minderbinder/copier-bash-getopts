@@ -1,0 +1,222 @@
+{%- set optional_opts = opts|rejectattr('required')|list -%}
+
+{%- set required_opts = opts|selectattr('required')|list -%}
+
+{%- set option_synopsis -%}
+{{' '}}[-h
+{%- for switch in switches -%}
+{{ switch.flag }}
+{%- endfor -%}
+]
+{%- for opt in optional_opts -%}
+{{' '}}[-{{ opt.flag }} <{{ opt.metavar }}>]
+{%- endfor -%}
+{%- for opt in required_opts -%}
+{{' '}}-{{ opt.flag }} <{{ opt.metavar }}>
+{%- endfor -%}
+{%- if max_positional_args > 0 -%}
+	{%- if min_positional_args >= 0 -%}
+		{%- for i in range(min_positional_args) %} <ARG>{% endfor -%}
+		{%- for i in range(max_positional_args - min_positional_args) %} [<ARG>]{% endfor -%}
+	{%- else -%}
+		{%- for i in range(max_positional_args) %} [<ARG>]{% endfor -%}
+	{%- endif -%}
+{%- elif min_positional_args > 0 -%}
+	{%- for i in range(min_positional_args) %} <ARG>{% endfor -%}
+{%- elif min_positional_args == 0 -%}
+	{{ ' ' }}[<ARG>]...
+{%- endif -%}
+{%- endset -%}
+
+{%- set getopts_str -%}
+{{- switches|map(attribute='flag')|join -}}
+{%- for opt in opts -%}
+{{ opt.flag }}{{ ':' if opt.metavar }}
+{%- endfor -%}
+{%- endset -%}
+#!/usr/bin/env bash
+
+set -o errexit -o errtrace -o noclobber -o nounset -o pipefail
+
+trap 'e=$?; if [ "$e" -ne "0" ]; then printf "LINE %s: exit %s <- %s%s\\n" "$BASH_LINENO" "$e" "${BASH_COMMAND}" "$(printf " <- %s" "${FUNCNAME[@]:-main}")" 1>&2; fi' EXIT
+
+
+PROGNAME="${0##*/}"
+
+
+contains_value() {
+	local value
+	value="$1"
+	shift
+	for arg in "$@"; do
+		if [ "$value" == "$arg" ]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+main() {
+	local OPTIND
+	local OPTARG
+	local func_name
+	local usage
+	local required_opts
+	local additive_opts
+	local min_positional_args
+	local max_positional_args
+	local provided_opts
+	local missing_opts
+
+	{% for switch in switches -%}
+	local {{ switch.dest }}
+	{% endfor -%}
+	{% for opt in opts -%}
+	local {{ opt.dest }}
+	{% endfor %}
+	{% for switch in switches -%}
+	{% if switch.additive -%}
+	{{ switch.dest }}=({{ '"{}"'.format(switch.default) if switch.default }})
+	{%- else -%}
+	{{ switch.dest }}="{{ switch.default }}"
+	{%- endif %}
+	{% endfor -%}
+	{% for opt in opts -%}
+	{% if opt.additive -%}
+	{{ opt.dest }}=({{ '"{}"'.format(opt.default) if opt.default }})
+	{%- else -%}
+	{{ opt.dest }}="{{ opt.default }}"
+	{%- endif %}
+	{% endfor %}
+	func_name="$PROGNAME:$FUNCNAME"
+
+	usage() {
+		>&2 cat <<EOF
+	NAME
+		${PROGNAME} -- {{ short_description }}
+
+	SYNOPSIS
+		${PROGNAME}{{ option_synopsis }}
+
+	DESCRIPTION
+		{{ description }}
+
+		The options are as follows:
+
+		-h	print this help and exit
+		{%- for switch in switches -%}
+		-{{ switch.flag }}	{{ switch.description }}
+
+		{% endfor %}
+		{%- for opt in opts -%}
+		-{{ opt.flag }} {{ opt.metavar }}
+			{{ opt.description }}
+
+		{% endfor %}
+EOF
+	}
+
+	# options which must be given
+	required_opts=(
+		{%- for flag in required_opts|map(attribute='flag') -%}
+		"{{ flag }}"{{ ' ' if not loop.last }}
+		{%- endfor -%}
+	)
+	# options which may be given more than once
+	additive_opts=(
+		{%- for flag in switches|selectattr('additive')|map(attribute='flag') -%}
+		"{{ flag }}"{{ ' ' if not loop.last or opts|selectattr('additive')|list }}
+		{%- endfor -%}
+		{%- for flag in opts|selectattr('additive')|map(attribute='flag') -%}
+		"{{ flag }}"{{ ' ' if not loop.last }}
+		{%- endfor -%}
+	)
+	# minimum number of positional arguments allowed (ignored if empty)
+	min_positional_args="{{ min_positional_args if min_positional_args > 0 }}"
+	# maximum number of positional arguments allowed (ignored if empty)
+	max_positional_args="{{ max_positional_args if max_positional_args > 0}}"
+
+	# tracks which options have been provided
+	provided_opts=()
+	while getopts 'h{{ getopts_str }}' opt; do
+		if ! contains_value "$opt" "${additive_opts[@]:-}" && contains_value "$opt" "${provided_opts[@]:-}"; then
+			>&2 printf '%s:%d: option cannot be given more than once -- %s\n' "$0" "$BASH_LINENO" "$opt"
+			usage
+			exit 1
+		fi
+
+		case "$opt" in
+			h)
+				usage
+				exit 0
+				;;
+			{%- for switch in switches %}
+			{{ switch.flag }})
+				{% if switch.additive -%}
+				{{ switch.dest }}+=("y")
+				{%- else -%}
+				{{ switch.dest }}="y"
+				{%- endif %}
+				;;
+			{%- endfor %}
+			{%- for opt in opts %}
+			{{ opt.flag }})
+				{% if opt.additive -%}
+				{{ opt.dest }}+=("$OPTARG")
+				{%- else -%}
+				{{ opt.dest }}="$OPTARG"
+				{%- endif %}
+				;;
+			{%- endfor %}
+			*)
+				usage
+				exit 1
+				;;
+		esac
+		provided_opts+=("$opt")
+	done
+	shift $((OPTIND - 1))
+
+	if [ -n "$min_positional_args" ] && [ "$#" -lt "$min_positional_args" ]; then
+		>&2 printf '%s:%d: at least %d positional argument(s) are needed but got %d -- %s\n' "$0" "$BASH_LINENO" "$min_positional_args" "$#" "$(printf "'%s' " "$@")"
+		usage
+		exit 1
+	fi
+	if [ -n "$max_positional_args" ] && [ "$#" -gt "$max_positional_args" ]; then
+		>&2 printf '%s:%d: up to %d positional argument(s) are allowed but got %d -- %s\n' "$0" "$BASH_LINENO" "$max_positional_args" "$#" "$(printf "'%s' " "$@")"
+		usage
+		exit 1
+	fi
+
+	if [ "{{'${#required_opts[@]}'}}" -gt "0" ]; then
+		missing_opts=()
+		for opt in "${required_opts[@]}"; do
+			if ! contains_value "$opt" "${provided_opts[@]:-}"; then
+				missing_opts+=("${opt}")
+			fi
+		done
+		if [ "{{'${#missing_opts[@]}'}}" -gt "0" ]; then
+			>&2 printf '%s:%d: missing required options -- %s\n' "$0" "$BASH_LINENO" "${missing_opts[*]}"
+			usage
+			exit 1
+		fi
+	fi
+
+	{% for switch in switches -%}
+	{% if switch.additive -%}
+	>&2 printf '{{ switch.dest }}: "%s"\n' "${{'{'}}{{ switch.dest }}{{'[@]:-}'}}"
+	{%- else -%}
+	>&2 printf '{{ switch.dest }}: "%s"\n' "${{'{'}}{{ switch.dest }}{{':-}'}}"
+	{%- endif %}
+	{% endfor -%}
+	{% for opt in opts -%}
+	{% if opt.additive -%}
+	>&2 printf '{{ opt.dest }}: "%s"\n' "${{'{'}}{{ opt.dest }}{{'[@]:-}'}}"
+	{%- else -%}
+	>&2 printf '{{ opt.dest }}: "%s"\n' "${{'{'}}{{ opt.dest }}{{':-}'}}"
+	{%- endif %}
+	{%- endfor %}
+}
+
+main "$@"
+

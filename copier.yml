@@ -1,0 +1,93 @@
+---
+project_name:
+  type: str
+  default: My Project
+
+short_description:
+  type: str
+  default: "CLI utility for..."
+
+description:
+  type: str
+  default: '{{ project_name|title }} is a {{ short_description }}'
+
+project_slug:
+  type: str
+  default: "{{ project_name|lower|replace(' ', '-') }}"
+
+file_name:
+  type: str
+  default: '{{ project_slug }}'
+
+switches:
+  type: yaml
+  multiline: true
+  default:
+    - additive: true
+      description: 'verbosity'
+      dest: 'verbosity'
+      flag: 'v'
+    - additive: false
+      description: list matching versions and exit without installing
+      dest: list
+      flag: l
+
+opts:
+  type: yaml
+  multiline: true
+  default:
+    - additive: false
+      default: '-'
+      description: 'output file'
+      dest: 'output_file'
+      flag: 'o'
+      metavar: 'OUTPUT_FILE'
+      required: false
+
+max_positional_args:
+  type: int
+  default: 0
+
+min_positional_args:
+  type: int
+  default: "{{ max_positional_args if max_positional_args > 0 else -1 }}"
+
+# num_opts:
+#   type: int
+
+# opts:
+#   type: yaml
+#   multiline: true
+#   default: |
+#     {% for i in range(num_opts) -%}
+#     - flag: ""
+#       # dest is the bash var name opt val will be stored in
+#       dest: ""
+#       required: false
+#       additive: false
+#       metavar: "VALUE"
+#       default: ""
+#       description: ""
+#     {% endfor -%}
+
+# opt_names:
+#   type: yaml
+#   default: []
+
+# opts:
+#   type: yaml
+#   multiline: true
+#   default: |
+#     {% for opt_name in opt_names -%}
+#     - flag: "{{ opt_name|first }}"
+#       dest: "{{ opt_name }}"
+#       required: false
+#       additive: false
+#       metavar: "{{ opt_name|upper }}"
+#       default: ""
+#       description: ""
+#     {% endfor -%}
+
+# _jinja_extensions:
+#   - cookiecutter.extensions.SlugifyExtension
+
