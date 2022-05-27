@@ -104,14 +104,15 @@ main() {
 		The options are as follows:
 
 		-h	print this help and exit
-		{%- for switch in switches -%}
+
+		{%- for switch in switches %}
+
 		-{{ switch.flag }}	{{ switch.description }}
-{{''}}
 		{%- endfor %}
-		{%- for opt in opts -%}
+		{%- for opt in opts %}
+
 		-{{ opt.flag }} {{ opt.metavar }}
 			{{ opt.description }}
-{{''}}
 		{%- endfor %}
 EOF
 	}
