@@ -73,21 +73,21 @@ main() {
 	{% endfor -%}
 	{% for opt in opts -%}
 	local {{ opt.dest }}
-	{% endfor %}
+	{%- endfor %}
 	{% for switch in switches -%}
-	{% if switch.additive -%}
+	{%- if switch.additive -%}
 	{{ switch.dest }}=({{ '"{}"'.format(switch.default) if switch.default }})
 	{%- else -%}
 	{{ switch.dest }}="{{ switch.default }}"
-	{%- endif %}
+	{%- endif -%}
 	{% endfor -%}
 	{% for opt in opts -%}
-	{% if opt.additive -%}
+	{%- if opt.additive -%}
 	{{ opt.dest }}=({{ '"{}"'.format(opt.default) if opt.default }})
 	{%- else -%}
 	{{ opt.dest }}="{{ opt.default }}"
-	{%- endif %}
-	{% endfor %}
+	{%- endif -%}
+	{%- endfor %}
 	func_name="$PROGNAME:$FUNCNAME"
 
 	usage() {
