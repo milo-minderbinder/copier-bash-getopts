@@ -79,7 +79,7 @@ main() {
 	{{ switch.dest }}=({{ '"{}"'.format(switch.default) if switch.default }})
 	{%- else -%}
 	{{ switch.dest }}="{{ switch.default }}"
-	{%- endif -%}
+	{%- endif %}
 	{% endfor -%}
 
 	{% for opt in opts -%}
@@ -87,7 +87,7 @@ main() {
 	{{ opt.dest }}=({{ '"{}"'.format(opt.default) if opt.default }})
 	{%- else -%}
 	{{ opt.dest }}="{{ opt.default }}"
-	{%- endif -%}
+	{%- endif %}
 	{% endfor %}
 	func_name="$PROGNAME:$FUNCNAME"
 
