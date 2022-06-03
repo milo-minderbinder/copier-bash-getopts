@@ -1,4 +1,8 @@
 ---
+_envops:
+  trim_blocks: true
+  lstrip_blocks: true
+
 project_name:
   type: str
   default: My Project
@@ -44,13 +48,13 @@ opts:
       metavar: 'OUTPUT_FILE'
       required: false
 
-max_positional_args:
-  type: int
-  default: 0
-
 min_positional_args:
   type: int
-  default: "{{ max_positional_args if max_positional_args > 0 else -1 }}"
+  default: -1
+
+max_positional_args:
+  type: int
+  default: "{{ min_positional_args if min_positional_args > 0 else 0 }}"
 
 # num_opts:
 #   type: int

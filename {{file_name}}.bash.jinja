@@ -1,39 +1,36 @@
-{%- set optional_opts = opts|rejectattr('required')|list -%}
-
-{%- set required_opts = opts|selectattr('required')|list -%}
-
-{%- set option_synopsis -%}
-{{' '}}[-h
-{%- for switch in switches -%}
+{% set optional_opts = opts|rejectattr('required')|list %}
+{% set required_opts = opts|selectattr('required')|list %}
+{% set option_synopsis %}
+ [-h
+{%- for switch in switches %}
 {{ switch.flag }}
 {%- endfor -%}
 ]
-{%- for opt in optional_opts -%}
-{{' '}}[-{{ opt.flag }} <{{ opt.metavar }}>]
+{%- for opt in optional_opts %}
+ [-{{ opt.flag }} <{{ opt.metavar }}>]
 {%- endfor -%}
-{%- for opt in required_opts -%}
-{{' '}}-{{ opt.flag }} <{{ opt.metavar }}>
+{%- for opt in required_opts %}
+ -{{ opt.flag }} <{{ opt.metavar }}>
 {%- endfor -%}
-{%- if max_positional_args > 0 -%}
-	{%- if min_positional_args >= 0 -%}
-		{%- for i in range(min_positional_args) %} <ARG>{% endfor -%}
-		{%- for i in range(max_positional_args - min_positional_args) %} [<ARG>]{% endfor -%}
-	{%- else -%}
-		{%- for i in range(max_positional_args) %} [<ARG>]{% endfor -%}
-	{%- endif -%}
-{%- elif min_positional_args > 0 -%}
-	{%- for i in range(min_positional_args) %} <ARG>{% endfor -%}
-{%- elif min_positional_args == 0 -%}
-	{{ ' ' }}[<ARG>]...
-{%- endif -%}
-{%- endset -%}
-
-{%- set getopts_str -%}
+{% if max_positional_args > 0 %}
+	{% if min_positional_args >= 0 %}
+		{% for i in range(min_positional_args) %} <ARG>{% endfor %}
+		{% for i in range(max_positional_args - min_positional_args) %} [<ARG>]{% endfor %}
+	{% else %}
+		{% for i in range(max_positional_args) %} [<ARG>]{% endfor %}
+	{% endif %}
+{% elif min_positional_args > 0 %}
+	{% for i in range(min_positional_args) %} <ARG>{% endfor %}
+{% elif min_positional_args == 0 %}
+ [<ARG>]...
+{% endif %}
+{% endset %}
+{% set getopts_str %}
 {{- switches|map(attribute='flag')|join -}}
-{%- for opt in opts -%}
+{%- for opt in opts %}
 {{ opt.flag }}{{ ':' if opt.metavar }}
 {%- endfor -%}
-{%- endset -%}
+{% endset %}
 #!/usr/bin/env bash
 
 set -o errexit -o errtrace -o noclobber -o nounset -o pipefail
@@ -68,53 +65,54 @@ main() {
 	local provided_opts
 	local missing_opts
 
-	{% for switch in switches -%}
+	{% for switch in switches %}
 	local {{ switch.dest }}
-	{% endfor -%}
-	{% for opt in opts -%}
+	{% endfor %}
+	{% for opt in opts %}
 	local {{ opt.dest }}
 	{% endfor %}
-	{% for switch in switches -%}
-	{%- if switch.additive -%}
-	{{ switch.dest }}=({{ '"{}"'.format(switch.default) if switch.default }})
-	{%- else -%}
-	{{ switch.dest }}="{{ switch.default }}"
-	{%- endif %}
-	{% endfor -%}
 
-	{% for opt in opts -%}
-	{%- if opt.additive -%}
-	{{ opt.dest }}=({{ '"{}"'.format(opt.default) if opt.default }})
-	{%- else -%}
-	{{ opt.dest }}="{{ opt.default }}"
-	{%- endif %}
+	{% for switch in switches %}
+	{% if switch.additive %}
+	{{ switch.dest }}=({{ '"{}"'.format(switch.default) if switch.default }})
+	{% else %}
+	{{ switch.dest }}="{{ switch.default }}"
+	{% endif %}
 	{% endfor %}
+	{% for opt in opts %}
+	{% if opt.additive %}
+	{{ opt.dest }}=({{ '"{}"'.format(opt.default) if opt.default }})
+	{% else %}
+	{{ opt.dest }}="{{ opt.default }}"
+	{% endif %}
+	{% endfor %}
+
 	func_name="$PROGNAME:$FUNCNAME"
 
 	usage() {
 		>&2 cat <<EOF
-	NAME
-		${PROGNAME} -- {{ short_description }}
+		NAME
+			${PROGNAME} -- {{ short_description }}
 
-	SYNOPSIS
-		${PROGNAME}{{ option_synopsis }}
+		SYNOPSIS
+			${PROGNAME}{{ option_synopsis }}
 
-	DESCRIPTION
-		{{ description }}
+		DESCRIPTION
+			{{ description }}
 
-		The options are as follows:
+			The options are as follows:
 
-		-h	print this help and exit
+			-h	print this help and exit
 
-		{%- for switch in switches %}
+			{% for switch in switches %}
+			-{{ switch.flag }}	{{ switch.description }}
 
-		-{{ switch.flag }}	{{ switch.description }}
-		{%- endfor %}
-		{%- for opt in opts %}
+			{% endfor %}
+			{% for opt in opts %}
+			-{{ opt.flag }} {{ opt.metavar }}
+				{{ opt.description }}
 
-		-{{ opt.flag }} {{ opt.metavar }}
-			{{ opt.description }}
-		{%- endfor %}
+			{% endfor %}
 EOF
 	}
 
@@ -152,24 +150,24 @@ EOF
 				usage
 				exit 0
 				;;
-			{%- for switch in switches %}
+			{% for switch in switches %}
 			{{ switch.flag }})
-				{% if switch.additive -%}
+				{% if switch.additive %}
 				{{ switch.dest }}+=("y")
-				{%- else -%}
+				{% else %}
 				{{ switch.dest }}="y"
-				{%- endif %}
+				{% endif %}
 				;;
-			{%- endfor %}
-			{%- for opt in opts %}
+			{% endfor %}
+			{% for opt in opts %}
 			{{ opt.flag }})
-				{% if opt.additive -%}
+				{% if opt.additive %}
 				{{ opt.dest }}+=("$OPTARG")
-				{%- else -%}
+				{% else %}
 				{{ opt.dest }}="$OPTARG"
-				{%- endif %}
+				{% endif %}
 				;;
-			{%- endfor %}
+			{% endfor %}
 			*)
 				usage
 				exit 1
@@ -204,20 +202,20 @@ EOF
 		fi
 	fi
 
-	{% for switch in switches -%}
-	{% if switch.additive -%}
+	{% for switch in switches %}
+	{% if switch.additive %}
 	>&2 printf '{{ switch.dest }}: "%s"\n' "${{'{'}}{{ switch.dest }}{{'[@]:-}'}}"
-	{%- else -%}
+	{% else %}
 	>&2 printf '{{ switch.dest }}: "%s"\n' "${{'{'}}{{ switch.dest }}{{':-}'}}"
-	{%- endif %}
-	{% endfor -%}
-	{% for opt in opts -%}
-	{% if opt.additive -%}
+	{% endif %}
+	{% endfor %}
+	{% for opt in opts %}
+	{% if opt.additive %}
 	>&2 printf '{{ opt.dest }}: "%s"\n' "${{'{'}}{{ opt.dest }}{{'[@]:-}'}}"
-	{%- else -%}
+	{% else %}
 	>&2 printf '{{ opt.dest }}: "%s"\n' "${{'{'}}{{ opt.dest }}{{':-}'}}"
-	{%- endif %}
-	{%- endfor %}
+	{% endif %}
+	{% endfor %}
 }
 
 main "$@"
