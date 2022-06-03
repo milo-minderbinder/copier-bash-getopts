@@ -31,10 +31,6 @@ switches:
       description: 'verbosity'
       dest: 'verbosity'
       flag: 'v'
-    - additive: false
-      description: list matching versions and exit without installing
-      dest: list
-      flag: l
 
 opts:
   type: yaml
