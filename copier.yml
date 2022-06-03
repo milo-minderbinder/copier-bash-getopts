@@ -9,7 +9,7 @@ project_name:
 
 short_description:
   type: str
-  default: "CLI utility for..."
+  default: "CLI utility for "
 
 description:
   type: str
@@ -17,7 +17,7 @@ description:
 
 project_slug:
   type: str
-  default: "{{ project_name|lower|replace(' ', '-') }}"
+  default: "{{ project_name|lower|regex_replace('[^a-z0-9_.-]', '-') }}"
 
 file_name:
   type: str
@@ -48,13 +48,35 @@ opts:
       metavar: 'OUTPUT_FILE'
       required: false
 
-min_positional_args:
-  type: int
-  default: -1
-
 max_positional_args:
   type: int
-  default: "{{ min_positional_args if min_positional_args > 0 else 0 }}"
+  default: 0
+  help: 'total number of positional arguments allowed; if set to -1, then there will be no upper limit enforced'
+
+min_positional_args:
+  type: int
+  default: "{{ max_positional_args if max_positional_args != 0 else -1 }}"
+  help: 'total number of positional arguments required; if set to -1 or 0, then there will be no lower limit enforced'
+  when: '{{ max_positional_args != 0 }}'
+
+positional_args_metavars:
+  type: str
+  default: |
+    {% if min_positional_args >= 0 %}
+      {% for i in range(min_positional_args) %} ARG{% endfor %}
+    {% endif %}
+    {% if max_positional_args > min_positional_args %}
+      {% for i in range(max_positional_args - ([0, min_positional_args]|max)) %} [ARG]{% endfor %}
+    {% elif max_positional_args < 0 %}
+     [ARG]...
+    {% endif %}
+  when: '{{ max_positional_args != 0 }}'
+
+positional_args_help:
+  type: str
+  multiline: true
+  default: ''
+  when: '{{ max_positional_args != 0 }}'
 
 # num_opts:
 #   type: int
