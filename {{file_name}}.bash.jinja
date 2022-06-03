@@ -12,16 +12,12 @@
 {%- for opt in required_opts %}
  -{{ opt.flag }} <{{ opt.metavar }}>
 {%- endfor -%}
-{% if max_positional_args > 0 %}
-	{% if min_positional_args >= 0 %}
-		{% for i in range(min_positional_args) %} <ARG>{% endfor %}
-		{% for i in range(max_positional_args - min_positional_args) %} [<ARG>]{% endfor %}
-	{% else %}
-		{% for i in range(max_positional_args) %} [<ARG>]{% endfor %}
-	{% endif %}
-{% elif min_positional_args > 0 %}
+{% if min_positional_args >= 0 %}
 	{% for i in range(min_positional_args) %} <ARG>{% endfor %}
-{% elif min_positional_args == 0 %}
+{% endif %}
+{% if max_positional_args > min_positional_args %}
+	{% for i in range(max_positional_args - ([0, min_positional_args]|max)) %} [<ARG>]{% endfor %}
+{% elif max_positional_args < 0 %}
  [<ARG>]...
 {% endif %}
 {% endset %}
