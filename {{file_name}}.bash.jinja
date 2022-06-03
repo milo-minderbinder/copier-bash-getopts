@@ -81,6 +81,7 @@ main() {
 	{{ switch.dest }}="{{ switch.default }}"
 	{%- endif -%}
 	{% endfor -%}
+
 	{% for opt in opts -%}
 	{%- if opt.additive -%}
 	{{ opt.dest }}=({{ '"{}"'.format(opt.default) if opt.default }})
