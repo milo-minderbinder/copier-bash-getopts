@@ -32,7 +32,7 @@ switches:
   multiline: true
   default:
     - additive: true
-      description: 'verbosity'
+      description: 'increase verbosity'
       dest: 'verbosity'
       flag: 'v'
 
@@ -61,7 +61,7 @@ min_positional_args:
 
 positional_args_metavars:
   type: str
-  default: |
+  default: |-
     {% if min_positional_args >= 0 %}
       {% for i in range(min_positional_args) %} ARG{% endfor %}
     {% endif %}

@@ -1,6 +1,6 @@
 {% set optional_opts = opts|rejectattr('required')|list %}
 {% set required_opts = opts|selectattr('required')|list %}
-{% set option_synopsis %}
+{% set options_metavars %}
  [-h
 {%- for switch in switches %}
 {{ switch.flag }}
@@ -12,9 +12,6 @@
 {%- for opt in required_opts %}
  -{{ opt.flag }} {{ opt.metavar }}
 {%- endfor -%}
-{% if positional_args_metavars %}
- {{ positional_args_metavars }}
-{% endif %}
 {% endset %}
 {% set getopts_str %}
 {{- switches|map(attribute='flag')|join -}}
@@ -90,7 +87,7 @@ contains_value() {
 			${func_name} -- {{ short_description }}
 
 		SYNOPSIS
-			${func_name}{{ option_synopsis }}
+			${func_name}{{ options_metavars }}{{ positional_args_metavars }}
 
 		DESCRIPTION
 			{{ description }}
