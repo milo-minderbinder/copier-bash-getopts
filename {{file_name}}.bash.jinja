@@ -44,7 +44,7 @@ contains_value() {
 	return 1
 }
 
-main() {
+{{ function_name }}() {
 	local OPTIND
 	local OPTARG
 	local func_name
@@ -78,15 +78,19 @@ main() {
 	{% endif %}
 	{% endfor %}
 
+	{% if function_name != 'main' %}
 	func_name="$PROGNAME:$FUNCNAME"
+	{% else %}
+	func_name="$PROGNAME"
+	{% endif %}
 
 	usage() {
 		>&2 cat <<EOF | sed 's/^\t\t//'
 		NAME
-			${PROGNAME} -- {{ short_description }}
+			${func_name} -- {{ short_description }}
 
 		SYNOPSIS
-			${PROGNAME}{{ option_synopsis }}
+			${func_name}{{ option_synopsis }}
 
 		DESCRIPTION
 			{{ description }}
@@ -225,5 +229,5 @@ EOF
 	{% endfor %}
 }
 
-main "$@"
+{{ function_name }} "$@"
 

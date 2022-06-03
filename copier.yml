@@ -7,21 +7,25 @@ project_name:
   type: str
   default: My Project
 
+project_slug:
+  type: str
+  default: "{{ project_name|lower|regex_replace('[^a-z0-9_.-]', '-') }}"
+
 short_description:
   type: str
   default: "CLI utility for "
 
 description:
   type: str
-  default: '{{ project_name|title }} is a {{ short_description }}'
-
-project_slug:
-  type: str
-  default: "{{ project_name|lower|regex_replace('[^a-z0-9_.-]', '-') }}"
+  default: '{{ project_slug }} is a {{ short_description }}'
 
 file_name:
   type: str
   default: '{{ project_slug }}'
+
+function_name:
+  type: str
+  default: 'main'
 
 switches:
   type: yaml
