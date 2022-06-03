@@ -87,28 +87,40 @@ main() {
 
 	usage() {
 		>&2 cat <<EOF
-		NAME
-			${PROGNAME} -- {{ short_description }}
+	NAME
+		${PROGNAME} -- {{ short_description }}
 
-		SYNOPSIS
-			${PROGNAME}{{ option_synopsis }}
+	SYNOPSIS
+		${PROGNAME}{{ option_synopsis }}
 
-		DESCRIPTION
-			{{ description }}
+	DESCRIPTION
+		{{ description }}
 
-			The options are as follows:
+		The options are as follows:
 
-			-h	print this help and exit
+		-h	print this help and exit
 
-			{% for switch in switches %}
-			-{{ switch.flag }}	{{ switch.description }}
+		{% for switch in switches %}
+		-{{ switch.flag }}	{{ switch.description }}
+			{%- if switch.default +%} (default: {{ switch.default }})
+			{%- endif %}
 
-			{% endfor %}
-			{% for opt in opts %}
-			-{{ opt.flag }} {{ opt.metavar }}
-				{{ opt.description }}
+			{% if switch.additive %}
+			may be given more than once
+			{% endif %}
 
-			{% endfor %}
+		{% endfor %}
+		{% for opt in opts %}
+		-{{ opt.flag }} {{ opt.metavar }}
+			{{ '(required) ' if opt.required }}{{ opt.description }}
+			{%- if opt.default +%} (default: {{ opt.default }})
+			{%- endif %}
+
+			{% if opt.additive %}
+			may be given more than once
+			{% endif %}
+
+		{% endfor %}
 EOF
 	}
 
