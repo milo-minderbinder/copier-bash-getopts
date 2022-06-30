@@ -21,7 +21,7 @@ description:
 
 file_name:
   type: str
-  default: '{{ project_slug }}'
+  default: '{{ project_slug }}.bash'
 
 function_name:
   type: str
@@ -60,15 +60,15 @@ min_positional_args:
 
 positional_args_metavars:
   type: str
-  default: |-
-    {% if min_positional_args >= 0 %}
-      {% for i in range(min_positional_args) %} ARG{% endfor %}
-    {% endif %}
-    {% if max_positional_args > min_positional_args %}
-      {% for i in range(max_positional_args - ([0, min_positional_args]|max)) %} [ARG]{% endfor %}
-    {% elif max_positional_args < 0 %}
+  default: >-
+    {%- if min_positional_args >= 0 -%}
+      {%- for i in range(min_positional_args) %} ARG{%- endfor -%}
+    {%- endif %}
+    {%- if max_positional_args > min_positional_args -%}
+      {%- for i in range(max_positional_args - ([0, min_positional_args]|max)) %} [ARG]{%- endfor -%}
+    {%- elif max_positional_args < 0 %}
      [ARG]...
-    {% endif %}
+    {%- endif -%}
   when: '{{ max_positional_args != 0 }}'
 
 positional_args_help:
