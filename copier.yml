@@ -3,9 +3,27 @@ _envops:
   trim_blocks: true
   lstrip_blocks: true
 
+_exclude:
+  # defaults:
+  - 'copier.yaml'
+  - 'copier.yml'
+  - '~*'
+  - '*.py[co]'
+  - '__pycache__'
+  - '.git'
+  - '.DS_Store'
+  - '.svn'
+  # common:
+  - '.gitignore'
+  - '[._]*.sw[a-p]'
+  # project specific:
+  - 'common-header.bash'
+  - 'common-functions.bash'
+  - 'function.bash'
+
 project_name:
   type: str
-  default: My Project
+  placeholder: Project Name
 
 project_slug:
   type: str
@@ -13,11 +31,14 @@ project_slug:
 
 short_description:
   type: str
+  multiline: true
   default: "CLI utility for "
 
 description:
   type: str
-  default: '{{ project_slug }} is a {{ short_description }}'
+  multiline: true
+  default: |-
+    {{ project_slug }} is a {{ short_description }}
 
 file_name:
   type: str

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -o errexit -o errtrace -o noclobber -o nounset -o pipefail
+
+trap 'e=$?; if [ "$e" -ne "0" ]; then printf "LINE %s: exit %s <- %s%s\\n" "$BASH_LINENO" "$e" "${BASH_COMMAND}" "$(printf " <- %s" "${FUNCNAME[@]:-main}")" 1>&2; fi' EXIT
+
+
+PROGNAME="${0##*/}"
