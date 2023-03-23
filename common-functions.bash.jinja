@@ -1,9 +1,16 @@
+VERBOSITY=""
+
+{% raw %}
 log_debug() {
-	(>&2 printf '%sDEBUG%s: %s\n' "$(tput setaf 7)" "$(tput sgr0)" "$@")
+	if [[ "${#VERBOSITY}" -ge "3" ]]; then
+		(>&2 printf '%sDEBUG%s: %s\n' "$(tput setaf 7)" "$(tput sgr0)" "$@")
+	fi
 }
 
 log_info() {
-	(>&2 printf '%sINFO%s: %s\n' "$(tput setaf 2)" "$(tput sgr0)" "$@")
+	if [[ "${#VERBOSITY}" -ge "1" ]]; then
+		(>&2 printf '%sINFO%s: %s\n' "$(tput setaf 2)" "$(tput sgr0)" "$@")
+	fi
 }
 
 log_warn() {
@@ -13,6 +20,13 @@ log_warn() {
 log_error() {
 	(>&2 printf '%sERROR%s: %s\n' "$(tput setaf 1)" "$(tput sgr0)" "$@")
 }
+
+log_verbose() {
+	if [[ "${#VERBOSITY}" -ge "2" ]]; then
+		log_info "$@"
+	fi
+}
+{% endraw %}
 
 get_context() {
 	local line

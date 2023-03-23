@@ -1,0 +1,71 @@
+ltrim_ws() {
+	local input
+	local smallest_lws
+	input="$(cat "${1:--}")"
+	smallest_lws=$(printf '%s\n' "$input" | sed -e '/^[[:space:]]*$/d' -e 's/[^[:space:]].*$//' | sort | head -n 1 | wc -m)
+	printf '%s\n' "$input" | cut -c ${smallest_lws}-
+}
+
+get_color() {
+	local color
+	case "$1" in
+		bla*) color=0;;
+		r*) color=1;;
+		g*) color=2;;
+		y*) color=3;;
+		blu*) color=4;;
+		m*|p*) color=5;;
+		c*) color=6;;
+		w*) color=7;;
+		*)
+			1>&2 printf '%s[ERROR]%s: unknown color name: %s\n' "$(tput setaf 1)" "$(tput sgr0)" "$1"
+			return 1
+			;;
+	esac
+	printf '%d\n' "$color"
+}
+
+hl() {
+	local fg
+	local bg
+	local text
+
+	if [ "$#" -lt "2"  ] || [ "$#" -gt "3" ]; then
+		cat <<EOF | ltrim_ws 1>&2
+		$(tput setaf 1)[ERROR]$(tput sgr0): incorrect # of arguments
+
+		USAGE
+			${FUNCNAME[@]:-main} FG_COLOR [BG_COLOR] TEXT
+
+		EXAMPLE
+			${FUNCNAME[@]:-main} red 'this text is red'
+EOF
+		return 1
+	fi
+	fg="$(tput setaf "$(get_color "$1")")"
+	if [ "$#" -eq "3" ]; then
+		bg="$(tput setab "$(get_color "$2")")"
+		shift
+	else
+		bg=""
+	fi
+	text="$2"
+	printf '%s%s%s\n' "${fg}${bg:-}" "$text" "$(tput sgr0)"
+}
+
+xml_format() { cat "${1:--}" | sed -E 's/^[[:space:]]+//' | tr -d '\n' | XMLLINT_INDENT=$'\t' xmllint --format - ; };
+
+add_to_path() {
+	local path_entries
+	path_entries="$(printf '%s\n' "${PATH}" | tr ':' '\n')"
+	for path_entry in "$@"; do
+		if ! printf '%s\n' "${path_entries}" | grep --fixed-strings --line-regexp --quiet "${path_entry}"; then
+			if [ ! -d "${path_entry}" ]; then
+				printf '%sWARNING:%s Adding non-directory path to PATH: %s\n' "$(tput setaf 1)" "$(tput sgr0)" "${path_entry}" 1>&2
+			else
+				printf '%sINFO:%s Adding to PATH: %s\n' "$(tput setaf 2)" "$(tput sgr0)" "${path_entry}" 1>&2
+			fi
+			export PATH="${path_entry}:${PATH}"
+		fi
+	done
+}

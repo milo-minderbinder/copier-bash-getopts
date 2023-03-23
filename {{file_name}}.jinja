@@ -1,6 +1,10 @@
 {% include 'common-header.bash.jinja' %}
 
 {% include 'common-functions.bash.jinja' %}
+{% if include_extra_functions %}
+
+{% include 'extra-functions.bash.jinja' %}
+{% endif %}
 
 {% include 'function.bash.jinja' %}
 
