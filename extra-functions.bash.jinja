@@ -9,6 +9,14 @@ ltrim_ws() {
 get_color() {
 	local color
 	case "$1" in
+		grey*|dim|gra*) color=8;;
+		light-r*) color=9;;
+		light-g*) color=10;;
+		light-y*) color=11;;
+		light-blu*) color=12;;
+		light-m*|light-p*) color=13;;
+		light-c*) color=14;;
+		light-w*|bright*) color=15;;
 		bla*) color=0;;
 		r*) color=1;;
 		g*) color=2;;

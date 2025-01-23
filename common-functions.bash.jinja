@@ -1,30 +1,84 @@
 VERBOSITY=""
 
 {% raw %}
-log_debug() {
-	if [[ "${#VERBOSITY}" -ge "3" ]]; then
-		(>&2 printf '%sDEBUG%s: %s\n' "$(tput setaf 7)" "$(tput sgr0)" "$@")
+_log_msg() {
+	local level
+	local ansi_escapes
+	local prefix
+	local msgs
+
+	if [ "$#" -lt "1" ]; then
+		printf 'ERROR: %s requires at least one argument, but got only %s' "$FUNCNAME" "$#" 1>&2
+		return 1
 	fi
-}
 
-log_info() {
-	if [[ "${#VERBOSITY}" -ge "1" ]]; then
-		(>&2 printf '%sINFO%s: %s\n' "$(tput setaf 2)" "$(tput sgr0)" "$@")
+	level=''
+	ansi_escapes=''
+	msgs=()
+	case "$(tr '[:lower:]' '[:upper:]' <<< "$1")" in
+		DEBUG)
+			level='DEBUG'
+			ansi_escapes="$(tput setaf 2)"
+			;;
+		INFO)
+			level='INFO'
+			ansi_escapes="$(tput setaf 2)"
+			;;
+		WARN*)
+			level='WARN'
+			ansi_escapes="$(tput setaf 3)"
+			;;
+		ERROR)
+			level='ERROR'
+			ansi_escapes="$(tput setaf 0)$(tput setab 1)"
+			;;
+		*)
+			if [ "$#" -eq "1" ]; then
+				msgs+=("$1")
+			else
+				level="$1"
+			fi
+			if [ "$#" -gt "2" ]; then
+				ansi_escapes="$2"
+				shift
+			fi
+			;;
+	esac
+	shift
+	msgs+=("$@")
+
+	if [ -z "$level" ]; then
+		prefix=''
+		for msg in "${msgs[@]}"; do
+			printf '%s%s%s\n' "${ansi_escapes:-}" "$msg" "${ansi_escapes:+$(tput sgr0)}" 1>&2
+		done
+	else
+		printf '%s%s%s: ' "${ansi_escapes:-}" "$level" "${ansi_escapes:+$(tput sgr0)}" 1>&2
+		prefix="$(printf "%$((${#level} + 2))s" '')"
+		printf '%s\n' "${msgs[@]}" | sed "2,\$s/^/${prefix}/" 1>&2
 	fi
-}
-
-log_warn() {
-	(>&2 printf '%sWARNING%s: %s\n' "$(tput setaf 3)" "$(tput sgr0)" "$@")
-}
-
-log_error() {
-	(>&2 printf '%sERROR%s: %s\n' "$(tput setaf 1)" "$(tput sgr0)" "$@")
 }
 
 log_verbose() {
-	if [[ "${#VERBOSITY}" -ge "2" ]]; then
-		log_info "$@"
+	if [ "${verbose:-n}" == "y" ]; then
+		log_debug "$@"
 	fi
+}
+
+log_debug() {
+	_log_msg debug "$@"
+}
+
+log_info() {
+	_log_msg info "$@"
+}
+
+log_warn() {
+	_log_msg warn "$@"
+}
+
+log_error() {
+	_log_msg error "$@"
 }
 {% endraw %}
 
@@ -82,7 +136,7 @@ trap 'log_stack_trace' EXIT
 get_script_dir() {
 	## resolve the directory of the given script
 	# example:
-	# 	get_script_dir "${BASH_SOURCE[0]}"
+	# 	SCRIPTDIR="$(get_script_dir "${BASH_SOURCE[0]}")"
 	SOURCE="${1}"
 	#SOURCE="${BASH_SOURCE[0]}"
 	while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
