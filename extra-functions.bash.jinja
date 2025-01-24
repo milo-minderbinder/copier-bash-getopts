@@ -61,10 +61,30 @@ EOF
 	printf '%s%s%s\n' "${fg}${bg:-}" "$text" "$(tput sgr0)"
 }
 
-xml_format() { cat "${1:--}" | sed -E 's/^[[:space:]]+//' | tr -d '\n' | XMLLINT_INDENT=$'\t' xmllint --format - ; };
+xml_format() {
+	local indent
+	indent='\t'
+	if [ "$#" -ge "2" ]; then
+		if [ "$1" == "-i" ] || [ "$1" == "--indent" ]; then
+			indent="$2"
+			shift 2
+		else
+			printf '%sERROR:%s invalid %s opt (only -i/--indent supported): %s\n' "$(tput setaf 1)" "$(tput sgr0)" "$FUNCNAME" "$1" 1>&2
+			return 2
+		fi
+	fi
+	cat "${1:--}" | sed -E 's/^[[:space:]]+//' | tr -d '\n' | XMLLINT_INDENT="$(printf "$indent")" xmllint --format - ;
+}
 
 add_to_path() {
+	local append
 	local path_entries
+
+	append=0
+	if [ "$1" == '-a' ] || [ "$1" == '--append' ]; then
+		shift
+		append=1
+	fi
 	path_entries="$(printf '%s\n' "${PATH}" | tr ':' '\n')"
 	for path_entry in "$@"; do
 		if ! printf '%s\n' "${path_entries}" | grep --fixed-strings --line-regexp --quiet "${path_entry}"; then
@@ -73,7 +93,12 @@ add_to_path() {
 			else
 				printf '%sINFO:%s Adding to PATH: %s\n' "$(tput setaf 2)" "$(tput sgr0)" "${path_entry}" 1>&2
 			fi
-			export PATH="${path_entry}:${PATH}"
+			if [ "${append}" -eq "0" ]; then
+				export PATH="${path_entry}:${PATH}"
+			else
+				export PATH="${PATH}:${path_entry}"
+			fi
+			path_entries="$(printf '%s\n' "${PATH}" | tr ':' '\n')"
 		fi
 	done
 }
