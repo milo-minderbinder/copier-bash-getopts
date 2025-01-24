@@ -1,26 +1,29 @@
-VERBOSITY=""
 
 {% raw %}
 _log_msg() {
 	local level
 	local ansi_escapes
-	local prefix
-	local msgs
 
 	if [ "$#" -lt "1" ]; then
 		printf 'ERROR: %s requires at least one argument, but got only %s' "$FUNCNAME" "$#" 1>&2
 		return 1
+	elif [ "$#" -eq "1" ]; then
+		printf '%s\n' "$1" 1>&2
+		return 0
 	fi
 
-	level=''
-	ansi_escapes=''
-	msgs=()
 	case "$(tr '[:lower:]' '[:upper:]' <<< "$1")" in
 		DEBUG)
+			if [ "${VERBOSITY:+${#VERBOSITY}}" -lt "3" ]; then
+				return 0
+			fi
 			level='DEBUG'
 			ansi_escapes="$(tput setaf 2)"
 			;;
 		INFO)
+			if [ "${VERBOSITY:+${#VERBOSITY}}" -lt "1" ]; then
+				return 0
+			fi
 			level='INFO'
 			ansi_escapes="$(tput setaf 2)"
 			;;
@@ -33,11 +36,8 @@ _log_msg() {
 			ansi_escapes="$(tput setaf 0)$(tput setab 1)"
 			;;
 		*)
-			if [ "$#" -eq "1" ]; then
-				msgs+=("$1")
-			else
-				level="$1"
-			fi
+			level="$1"
+			ansi_escapes=''
 			if [ "$#" -gt "2" ]; then
 				ansi_escapes="$2"
 				shift
@@ -45,23 +45,15 @@ _log_msg() {
 			;;
 	esac
 	shift
-	msgs+=("$@")
 
 	if [ -z "$level" ]; then
-		prefix=''
-		for msg in "${msgs[@]}"; do
+		for msg in "$@"; do
 			printf '%s%s%s\n' "${ansi_escapes:-}" "$msg" "${ansi_escapes:+$(tput sgr0)}" 1>&2
 		done
 	else
 		printf '%s%s%s: ' "${ansi_escapes:-}" "$level" "${ansi_escapes:+$(tput sgr0)}" 1>&2
-		prefix="$(printf "%$((${#level} + 2))s" '')"
-		printf '%s\n' "${msgs[@]}" | sed "2,\$s/^/${prefix}/" 1>&2
-	fi
-}
-
-log_verbose() {
-	if [ "${verbose:-n}" == "y" ]; then
-		log_debug "$@"
+		printf '%s\n' "$@" | \
+			sed "2,\$s/^/$(printf "%$((${#level} + 2))s" '')/" 1>&2
 	fi
 }
 
@@ -80,6 +72,13 @@ log_warn() {
 log_error() {
 	_log_msg error "$@"
 }
+
+log_verbose() {
+	if [ "${VERBOSITY:+${#VERBOSITY}}" -ge "2" ]; then
+		log_info "$@"
+	fi
+}
+
 {% endraw %}
 
 get_context() {
