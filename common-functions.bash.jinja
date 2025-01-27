@@ -52,7 +52,7 @@ _log_msg() {
 	else
 		printf '%s%s%s: ' "${ansi_escapes:-}" "$level" "${ansi_escapes:+$(tput sgr0)}" 1>&2
 		printf '%s\n' "$@" | \
-			sed "2,\$s/^/$(printf "%$((${#level} + 2))s" '')/" 1>&2
+			sed "$(printf '2,$s/^/%*s/' "$((${#level} + 2))" '')" 1>&2
 	fi
 }
 
