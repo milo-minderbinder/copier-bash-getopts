@@ -1,12 +1,18 @@
+{% if include_header %}
 {% include 'common-header.bash.jinja' %}
+{% endif %}
+{% if include_common_functions %}
 
 {% include 'common-functions.bash.jinja' %}
+{% endif %}
 {% if include_extra_functions %}
 
 {% include 'extra-functions.bash.jinja' %}
 {% endif %}
 
 {% include 'function.bash.jinja' %}
+{% if function_name == "main" %}
 
 {{ function_name }} "$@"
+{% endif %}
 

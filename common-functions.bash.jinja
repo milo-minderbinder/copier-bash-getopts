@@ -13,14 +13,14 @@ _log_msg() {
 
 	case "$(tr '[:lower:]' '[:upper:]' <<< "$1")" in
 		DEBUG)
-			if [ "${VERBOSITY:+${#VERBOSITY}}" -lt "3" ]; then
+			if [ -z "${VERBOSITY:-}" ] || [ "${#VERBOSITY}" -lt "3" ]; then
 				return 0
 			fi
 			level='DEBUG'
 			ansi_escapes="$(tput setaf 2)"
 			;;
 		INFO)
-			if [ "${VERBOSITY:+${#VERBOSITY}}" -lt "1" ]; then
+			if [ -z "${VERBOSITY:-}" ] || [ "${#VERBOSITY}" -lt "1" ]; then
 				return 0
 			fi
 			level='INFO'
@@ -73,7 +73,7 @@ log_error() {
 }
 
 log_verbose() {
-	if [ "${VERBOSITY:+${#VERBOSITY}}" -ge "2" ]; then
+	if [ ! -z "${VERBOSITY:-}" ] && [ "${#VERBOSITY}" -ge "2" ]; then
 		log_info "$@"
 	fi
 }

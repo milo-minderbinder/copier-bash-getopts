@@ -30,29 +30,46 @@ project_slug:
   type: str
   default: "{{ project_name|lower|regex_replace('[^a-z0-9_.-]', '-') }}"
 
+function_name:
+  type: str
+  default: 'main'
+
+include_usage:
+  type: bool
+  default: 'yes'
+  help: 'Output usage information when -h switch is provided or switch/opt/arg validation fails?'
+
 short_description:
   type: str
   multiline: true
-  default: "CLI utility for "
+  default: '{{ "CLI utility" if function_name == "main" else "utility function" }} for '
+  when: '{{ include_usage }}'
 
 description:
   type: str
   multiline: true
   default: |-
     {{ project_slug }} is a {{ short_description }}
+  when: '{{ include_usage }}'
 
 file_name:
   type: str
   default: '{{ project_slug }}.bash'
 
+include_header:
+  type: bool
+  default: '{{ "yes" if function_name == "main" else "no" }}'
+  help: 'Add bash shebang and lines defined in common headers at the top of the file?'
+
+include_common_functions:
+  type: bool
+  default: '{{ "yes" if function_name == "main" else "no" }}'
+  help: 'Add common utility functions at top of script?'
+
 include_extra_functions:
   type: bool
   default: 'no'
   help: 'Add extra utility functions at top of script?'
-
-function_name:
-  type: str
-  default: 'main'
 
 switches:
   type: yaml
@@ -62,6 +79,8 @@ switches:
       description: 'increase verbosity'
       dest: 'verbosity'
       flag: 'v'
+      default: 'v'
+      value: 'v'
 
 opts:
   type: yaml
