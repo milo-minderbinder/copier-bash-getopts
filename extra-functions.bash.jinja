@@ -43,10 +43,10 @@ hl() {
 		$(tput setaf 1)[ERROR]$(tput sgr0): incorrect # of arguments
 
 		USAGE
-			${FUNCNAME[@]:-main} FG_COLOR [BG_COLOR] TEXT
+			${FUNCNAME[0]:-main} FG_COLOR [BG_COLOR] TEXT
 
 		EXAMPLE
-			${FUNCNAME[@]:-main} red 'this text is red'
+			${FUNCNAME[0]:-main} red 'this text is red'
 EOF
 		return 1
 	fi
@@ -69,7 +69,7 @@ xml_format() {
 			indent="$2"
 			shift 2
 		else
-			printf '%sERROR:%s invalid %s opt (only -i/--indent supported): %s\n' "$(tput setaf 1)" "$(tput sgr0)" "$FUNCNAME" "$1" 1>&2
+			printf '%sERROR:%s invalid %s opt (only -i/--indent supported): %s\n' "$(tput setaf 1)" "$(tput sgr0)" "${FUNCNAME[0]}" "$1" 1>&2
 			return 2
 		fi
 	fi

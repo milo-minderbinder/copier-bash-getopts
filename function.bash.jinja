@@ -1,41 +1,37 @@
 {% set optional_opts = opts|rejectattr('required')|list %}
 {% set required_opts = opts|selectattr('required')|list %}
-{% set options_metavars %}
-{%- if include_usage or switches %}
+{% set additive_flags = (switches + opts)|selectattr('additive')|map(attribute='flag') %}
+{% set options_metavars|replace('\n', '') %}
+{% if include_usage or switches %}
  [-
-{%- if include_usage %}
+{% if include_usage %}
 h
-{%- endif -%}
-{%- for switch in switches %}
+{% endif -%}
+{% for switch in switches %}
 {{ switch.flag }}
-{%- endfor -%}
+{% endfor -%}
 ]
-{%- endif -%}
-{%- for opt in optional_opts %}
- [-{{ opt.flag }} {{ opt.metavar }}]
-{%- endfor -%}
-{%- for opt in required_opts %}
- -{{ opt.flag }} {{ opt.metavar }}
-{%- endfor -%}
+{% endif -%}
+{% for opt in optional_opts %}
+ [-{{ opt.flag }} {{ opt.metavar|default(opt.dest|upper) }}]
+{% endfor -%}
+{% for opt in required_opts %}
+ -{{ opt.flag }} {{ opt.metavar|default(opt.dest|upper) }}
+{% endfor -%}
+{% if positional_args_metavars %}
+ {{ positional_args_metavars.split()|join(' ') }}
+{% endif -%}
 {% endset %}
-{% set update_verbosity %}
-{% for switch in switches|selectattr('dest', 'equalto', 'verbosity') %}
-{% if loop.first %}
-VERBOSITY="$(printf '%s' "${verbosity{{ "[@]" if switch.additive else "" }}:-}")"
-{% endif %}
-{% endfor %}
-{% endset %}
-{% set getopts_str %}
-{%- if include_usage -%}
+{% set verbosity_switch=switches|selectattr('dest', 'eq', 'verbosity')|first %}
+{% set getopts_str|replace('\n', '') %}
+{% if include_usage -%}
 h
-{%- endif -%}
-{{- switches|map(attribute='flag')|join -}}
-{%- for opt in opts %}
-{{ opt.flag }}{{ ':' if opt.metavar }}
-{%- endfor -%}
+{% endif -%}
+{{ switches|map(attribute='flag')|join }}
+{{ opts|map(attribute='flag')|batch(1)|map('batch', 2, ':')|map('map', 'join')|map('join')|join }}
 {% endset %}
 {{ function_name }}() {
-	{% if update_verbosity %}
+	{% if verbosity_switch %}
 	local OLD_VERBOSITY
 	{% endif %}
 	local OPTIND
@@ -44,12 +40,20 @@ h
 	{% if include_usage %}
 	local {{ function_name }}_usage
 	{% endif %}
-	local required_opts
+	{% if additive_flags %}
 	local additive_opts
-	local min_positional_args
-	local max_positional_args
+	{% endif %}
 	local provided_opts
+	{% if required_opts %}
+	local required_opts
 	local missing_opts
+	{% endif %}
+	{% if min_positional_args > 0 %}
+	local min_positional_args
+	{% endif %}
+	{% if max_positional_args > 0 %}
+	local max_positional_args
+	{% endif %}
 
 	{% for switch in switches %}
 	local {{ switch.dest }}
@@ -86,7 +90,7 @@ h
 			${func_name} -- {{ short_description }}
 
 		SYNOPSIS
-			${func_name}{{ options_metavars }}{{ positional_args_metavars }}
+			${func_name}{{ options_metavars }}
 
 		DESCRIPTION
 			{{ description }}
@@ -97,22 +101,22 @@ h
 
 			{% for switch in switches %}
 			-{{ switch.flag }}	{{ switch.description }}
-				{%- if switch.default +%} (default: {{ switch.default }})
-				{%- endif %}
-
 				{% if switch.additive %}
 				may be given more than once
+				{% endif %}
+				{% if switch.default %}
+				{{ '(default: %s)'|format(switch.default) }}
 				{% endif %}
 
 			{% endfor %}
 			{% for opt in opts %}
-			-{{ opt.flag }} {{ opt.metavar }}
+			-{{ opt.flag }} {{ opt.metavar|default(opt.dest|upper) }}
 				{{ '(required) ' if opt.required }}{{ opt.description }}
-				{%- if opt.default +%} (default: {{ opt.default }})
-				{%- endif %}
-
 				{% if opt.additive %}
 				may be given more than once
+				{% endif %}
+				{% if opt.default %}
+				{{ '(default: %s)'|format(opt.default) }}
 				{% endif %}
 
 			{% endfor %}
@@ -123,30 +127,36 @@ EOF
 	}
 	{% endif %}
 
-	# options which must be given
+	{% if required_opts %}
 	required_opts=(
-		{%- for flag in required_opts|map(attribute='flag') -%}
-		"{{ flag }}"{{ ' ' if not loop.last }}
-		{%- endfor -%}
+		{%- for flag in required_opts|map(attribute='flag') %}
+		{{- '"%s"'|format(flag) -}}{{- ' ' if not loop.last -}}
+		{% endfor -%}
 	)
-	# options which may be given more than once
+	{% endif %}
+	{% if additive_flags %}
 	additive_opts=(
-		{%- for flag in switches|selectattr('additive')|map(attribute='flag') -%}
-		"{{ flag }}"{{ ' ' if not loop.last or opts|selectattr('additive')|list }}
-		{%- endfor -%}
-		{%- for flag in opts|selectattr('additive')|map(attribute='flag') -%}
-		"{{ flag }}"{{ ' ' if not loop.last }}
-		{%- endfor -%}
+		{%- for flag in additive_flags %}
+		{{- '"%s"'|format(flag) -}}{{- ' ' if not loop.last -}}
+		{% endfor -%}
 	)
-	# minimum number of positional arguments allowed (ignored if empty)
-	min_positional_args="{{ min_positional_args if min_positional_args > 0 }}"
-	# maximum number of positional arguments allowed (ignored if empty)
+	{% endif %}
+	{% if min_positional_args > 0 %}
+	min_positional_args="{{ min_positional_args }}"
+	{% endif %}
+	{% if max_positional_args > 0 %}
 	max_positional_args="{{ max_positional_args if max_positional_args > 0}}"
+	{% endif %}
 
 	# tracks which options have been provided
 	provided_opts=()
 	while getopts '{{ getopts_str }}' opt; do
-		if ! contains_value "$opt" "${additive_opts[@]:-}" && contains_value "$opt" "${provided_opts[@]:-}"; then
+		if \
+			{% if additive_flags %}
+			! grep --quiet --fixed-strings --line-regexp --regexp="$opt" <(printf '%s\n' "${additive_opts[@]:-}") && \
+			{% endif %}
+			grep --quiet --fixed-strings --line-regexp --regexp="$opt" <(printf '%s\n' "${provided_opts[@]:-}");
+		then
 			log_error "option cannot be given more than once: $opt"
 			{% if include_usage %}
 			{{ function_name }}_usage
@@ -190,11 +200,12 @@ EOF
 	done
 	shift $((OPTIND - 1))
 
-	{% if update_verbosity %}
+	{% if verbosity_switch %}
 	OLD_VERBOSITY="${VERBOSITY:-}"
-	{{ update_verbosity }}
+	VERBOSITY="{{ ("$(printf '%%s' \"${%s[@]:-}\")" if verbosity_switch.additive else '${%s:-}')|format(verbosity_switch.dest) }}"
 	{% endif %}
 
+	{% if min_positional_args > 0 %}
 	if [ -n "$min_positional_args" ] && [ "$#" -lt "$min_positional_args" ]; then
 		log_error "at least ${min_positional_args} positional argument(s) needed but got only $#: $*"
 		{% if include_usage %}
@@ -202,6 +213,8 @@ EOF
 		{% endif %}
 		exit 1
 	fi
+	{% endif %}
+	{% if max_positional_args > 0 %}
 	if [ -n "$max_positional_args" ] && [ "$#" -gt "$max_positional_args" ]; then
 		log_error "up to ${max_positional_args} positional argument(s) allowed but got $#: $*"
 		{% if include_usage %}
@@ -209,11 +222,13 @@ EOF
 		{% endif %}
 		exit 1
 	fi
+	{% endif %}
 
+	{% if required_opts %}
 	if [ "{{'${#required_opts[@]}'}}" -gt "0" ]; then
 		missing_opts=()
 		for opt in "${required_opts[@]}"; do
-			if ! contains_value "$opt" "${provided_opts[@]:-}"; then
+			if ! grep --quiet --fixed-strings --line-regexp --regexp="$opt" <(printf '%s\n' "${provided_opts[@]:-}")
 				missing_opts+=("${opt}")
 			fi
 		done
@@ -225,6 +240,7 @@ EOF
 			exit 1
 		fi
 	fi
+	{% endif %}
 
 	{% for switch in switches %}
 	{% if switch.additive %}
@@ -250,7 +266,7 @@ EOF
 	fi
 	{% endif %}
 
-	{% if update_verbosity %}
+	{% if verbosity_switch %}
 	VERBOSITY="${OLD_VERBOSITY:-}"
 	{% endif %}
 }
