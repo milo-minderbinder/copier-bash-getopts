@@ -1,6 +1,6 @@
 {% set optional_opts = opts|rejectattr('required')|list %}
 {% set required_opts = opts|selectattr('required')|list %}
-{% set additive_flags = (switches + opts)|selectattr('additive')|map(attribute='flag') %}
+{% set additive_flags = (switches + opts)|selectattr('additive')|map(attribute='flag')|list %}
 {% set options_metavars|replace('\n', '') %}
 {% if include_usage or switches %}
  [-
@@ -47,12 +47,6 @@ h
 	{% if required_opts %}
 	local required_opts
 	local missing_opts
-	{% endif %}
-	{% if min_positional_args > 0 %}
-	local min_positional_args
-	{% endif %}
-	{% if max_positional_args > 0 %}
-	local max_positional_args
 	{% endif %}
 
 	{% for switch in switches %}
@@ -141,12 +135,6 @@ EOF
 		{% endfor -%}
 	)
 	{% endif %}
-	{% if min_positional_args > 0 %}
-	min_positional_args="{{ min_positional_args }}"
-	{% endif %}
-	{% if max_positional_args > 0 %}
-	max_positional_args="{{ max_positional_args if max_positional_args > 0}}"
-	{% endif %}
 
 	# tracks which options have been provided
 	provided_opts=()
@@ -205,9 +193,18 @@ EOF
 	VERBOSITY="{{ ("$(printf '%%s' \"${%s[@]:-}\")" if verbosity_switch.additive else '${%s:-}')|format(verbosity_switch.dest) }}"
 	{% endif %}
 
+	{% if min_positional_args > 0 and min_positional_args == max_positional_args %}
+	if [ "$#" -ne "{{ min_positional_args }}" ]; then
+		log_error "exactly {{ min_positional_args }} positional argument(s) needed but got $#: $*"
+		{% if include_usage %}
+		{{ function_name }}_usage
+		{% endif %}
+		exit 1
+	fi
+	{% else %}
 	{% if min_positional_args > 0 %}
-	if [ -n "$min_positional_args" ] && [ "$#" -lt "$min_positional_args" ]; then
-		log_error "at least ${min_positional_args} positional argument(s) needed but got only $#: $*"
+	if [ "$#" -lt "{{ min_positional_args }}" ]; then
+		log_error "at least {{ min_positional_args }} positional argument(s) needed but got only $#: $*"
 		{% if include_usage %}
 		{{ function_name }}_usage
 		{% endif %}
@@ -215,13 +212,14 @@ EOF
 	fi
 	{% endif %}
 	{% if max_positional_args > 0 %}
-	if [ -n "$max_positional_args" ] && [ "$#" -gt "$max_positional_args" ]; then
-		log_error "up to ${max_positional_args} positional argument(s) allowed but got $#: $*"
+	if [ "$#" -gt "{{ max_positional_args }}" ]; then
+		log_error "up to {{ max_positional_args }} positional argument(s) allowed but got $#: $*"
 		{% if include_usage %}
 		{{ function_name }}_usage
 		{% endif %}
 		exit 1
 	fi
+	{% endif %}
 	{% endif %}
 
 	{% if required_opts %}

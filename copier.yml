@@ -81,6 +81,53 @@ switches:
       flag: 'v'
       default: 'v'
       value: 'v'
+  validator: |-
+    {% for switch in switches %}
+      {% for k in ('dest', 'flag') %}
+        {% if k not in switch %}
+          {{ k }} key must be defined in switch:
+            {{ switch|to_nice_yaml}}
+        {% endif %}
+      {% endfor %}
+      {% for k, v in switch|items %}
+        {% if k == 'additive' %}
+          {% if v is not boolean %}
+            {{ k }} must be a boolean value: {{ v }}
+          {% endif %}
+        {% elif k == 'dest' %}
+          {% if v is not string or v|trim|length == 0 %}
+            {{ k }} must be a non-empty string: {{ v }}
+          {% endif %}
+        {% elif k == 'flag' %}
+          {% if v is not string or v|trim|length != 1 %}
+            {{ k }} must be a one character string: {{ v }}
+          {% endif %}
+        {% elif k in ('description', 'default', 'value') %}
+          {% if (v is not string and v is not int) %}
+            {{ k }} must be a string or int value: {{ v }}
+          {% endif %}
+        {% else %}
+          invalid key "{{ k }}" in switch:
+            {{ switch|to_nice_yaml }}
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+    {% for dest, items in switches|groupby('dest') %}
+      {% if items|length > 1 %}
+        duplicate dest "{{ dest }}" in switches:
+          {{ items|to_nice_yaml }}
+      {% endif %}
+    {% endfor %}
+    {% for flag, items in switches|groupby('flag') %}
+      {% if items|length > 1 %}
+        duplicate flag value "{{ flag }}" in switches:
+          {{ items|to_nice_yaml }}
+      {% endif %}
+      {% if flag == "h" and include_usage %}
+        flag "{{ flag }}" is not permitted in switches when include_usage is true:
+          {{ items|to_nice_yaml }}
+      {% endif %}
+    {% endfor %}
 
 opts:
   type: yaml
@@ -93,6 +140,53 @@ opts:
       flag: 'o'
       metavar: 'OUTPUT_FILE'
       required: false
+  validator: |-
+    {% for opt in opts %}
+      {% for k in ('dest', 'flag') %}
+        {% if k not in opt %}
+          {{ k }} key must be defined in opt:
+            {{ opt|to_nice_yaml}}
+        {% endif %}
+      {% endfor %}
+      {% for k, v in opt|items %}
+        {% if k in ('additive', 'required') %}
+          {% if v is not boolean %}
+            {{ k }} must be a boolean value: {{ v }}
+          {% endif %}
+        {% elif k == 'dest' %}
+          {% if v is not string or v|trim|length == 0 %}
+            {{ k }} must be a non-empty string: {{ v }}
+          {% endif %}
+        {% elif k == 'flag' %}
+          {% if v is not string or v|trim|length != 1 %}
+            {{ k }} must be a one character string: {{ v }}
+          {% endif %}
+        {% elif k in ('description', 'default', 'value', 'metavar') %}
+          {% if (v is not string and v is not int) %}
+            {{ k }} must be a string or int value: {{ v }}
+          {% endif %}
+        {% else %}
+          invalid key "{{ k }}" in opt:
+            {{ opt|to_nice_yaml }}
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+    {% for dest, items in (opts + switches)|groupby('dest') %}
+      {% if items|length > 1 %}
+        duplicate dest value "{{ dest }}" in opts/switches:
+          {{ items|to_nice_yaml }}
+      {% endif %}
+    {% endfor %}
+    {% for flag, items in (opts + switches)|groupby('flag') %}
+      {% if items|length > 1 %}
+        duplicate flag value "{{ flag }}" in opts/switches:
+          {{ items|to_nice_yaml }}
+      {% endif %}
+      {% if flag == "h" and include_usage %}
+        flag "{{ flag }}" is not permitted in opts when include_usage is true:
+          {{ items|to_nice_yaml }}
+      {% endif %}
+    {% endfor %}
 
 max_positional_args:
   type: int
