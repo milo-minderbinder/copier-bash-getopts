@@ -112,13 +112,13 @@ switches:
         {% endif %}
       {% endfor %}
     {% endfor %}
-    {% for dest, items in switches|groupby('dest') %}
+    {% for dest, items in switches|groupby('dest', case_sensitive=True) %}
       {% if items|length > 1 %}
         duplicate dest "{{ dest }}" in switches:
           {{ items|to_nice_yaml }}
       {% endif %}
     {% endfor %}
-    {% for flag, items in switches|groupby('flag') %}
+    {% for flag, items in switches|groupby('flag', case_sensitive=True) %}
       {% if items|length > 1 %}
         duplicate flag value "{{ flag }}" in switches:
           {{ items|to_nice_yaml }}
@@ -171,13 +171,13 @@ opts:
         {% endif %}
       {% endfor %}
     {% endfor %}
-    {% for dest, items in (opts + switches)|groupby('dest') %}
+    {% for dest, items in (opts + switches)|groupby('dest', case_sensitive=True) %}
       {% if items|length > 1 %}
         duplicate dest value "{{ dest }}" in opts/switches:
           {{ items|to_nice_yaml }}
       {% endif %}
     {% endfor %}
-    {% for flag, items in (opts + switches)|groupby('flag') %}
+    {% for flag, items in (opts + switches)|groupby('flag', case_sensitive=True) %}
       {% if items|length > 1 %}
         duplicate flag value "{{ flag }}" in opts/switches:
           {{ items|to_nice_yaml }}
