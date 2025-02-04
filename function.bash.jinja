@@ -226,7 +226,7 @@ EOF
 	if [ "{{'${#required_opts[@]}'}}" -gt "0" ]; then
 		missing_opts=()
 		for opt in "${required_opts[@]}"; do
-			if ! grep --quiet --fixed-strings --line-regexp --regexp="$opt" <(printf '%s\n' "${provided_opts[@]:-}")
+			if ! grep --quiet --fixed-strings --line-regexp --regexp="$opt" <(printf '%s\n' "${provided_opts[@]:-}"); then
 				missing_opts+=("${opt}")
 			fi
 		done
