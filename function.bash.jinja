@@ -87,14 +87,14 @@ h
 			${func_name}{{ options_metavars }}
 
 		DESCRIPTION
-			{{ description }}
+			{{ description|wordwrap(width=78-(8*1), break_long_words=False)|indent(width='\t'*3, blank=True) }}
 
 			The options are as follows:
 
 			-h	print this help and exit
 
 			{% for switch in switches %}
-			-{{ switch.flag }}	{{ switch.description }}
+			-{{ switch.flag }}	{{ switch.description|wordwrap(width=78-(8*1), break_long_words=False)|indent(width='\t'*4, blank=True) }}
 				{% if switch.additive %}
 				may be given more than once
 				{% endif %}
@@ -105,7 +105,7 @@ h
 			{% endfor %}
 			{% for opt in opts %}
 			-{{ opt.flag }} {{ opt.metavar|default(opt.dest|upper) }}
-				{{ '(required) ' if opt.required }}{{ opt.description }}
+				{{ '(required) ' if opt.required }}{{ opt.description|wordwrap(width=78-(8*2), break_long_words=False)|indent(width='\t'*4, blank=True) }}
 				{% if opt.additive %}
 				may be given more than once
 				{% endif %}
@@ -114,9 +114,11 @@ h
 				{% endif %}
 
 			{% endfor %}
-			{% if positional_args_help %}
-			{{ positional_args_help }}
-			{% endif %}
+			{% for positional_arg_help in (positional_args_help.splitlines()|map('trim')|join('\n')).split('\n\n') if positional_arg_help %}
+			{% set positional_arg_help=(positional_arg_help|trim).split(maxsplit=1) %}
+			{{ positional_arg_help|join('\t' if positional_arg_help[0]|length < 8 else '\n')|wordwrap(width=78-(8*1), break_long_words=False)|indent(width='\t'*4, blank=True) }}
+
+			{% endfor %}
 EOF
 	}
 	{% endif %}
