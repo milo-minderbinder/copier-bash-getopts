@@ -110,7 +110,7 @@ h
 			{% for opt in opts %}
 			-{{ opt.flag }} {{ opt.metavar|default(opt.dest|upper) }}
 				{{
-					['(required)' if not opt.default, opt.description]
+					['(required)' if opt.required, opt.description]
 					|select
 					|join(' ')
 					|wordwrap(width=78-(8*2), break_long_words=False)
@@ -124,7 +124,7 @@ h
 				{% endif %}
 
 			{% endfor %}
-			{% if positional_args_help %}
+			{% if max_positional_args != 0 and positional_args_help|trim|length > 0 %}
 			Positional Arguments:
 
 			{% for positional_arg_help
