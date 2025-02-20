@@ -79,53 +79,72 @@ switches:
       description: 'increase verbosity'
       dest: 'verbosity'
       flag: 'v'
-      default: 'v'
+      default:
+        - 'v'
       value: 'v'
+  help: |-
+    Array of command switches/flags (options which do not take a value argument).
   validator: |-
     {% for switch in switches %}
       {% for k in ('dest', 'flag') %}
         {% if k not in switch %}
-          {{ k }} key must be defined in switch:
-            {{ switch|to_nice_yaml}}
+    {{ k }} key must be defined in switch:
+      {{ switch|to_nice_yaml|indent(width=2) }}
         {% endif %}
       {% endfor %}
       {% for k, v in switch|items %}
         {% if k == 'additive' %}
           {% if v is not boolean %}
-            {{ k }} must be a boolean value: {{ v }}
+    {{ k }} must be a boolean value:
+      {{ switch|to_nice_yaml|indent(width=2) }}
           {% endif %}
         {% elif k == 'dest' %}
           {% if v is not string or v|trim|length == 0 %}
-            {{ k }} must be a non-empty string: {{ v }}
+    {{ k }} must be a non-empty string:
+      {{ switch|to_nice_yaml|indent(width=2) }}
           {% endif %}
         {% elif k == 'flag' %}
           {% if v is not string or v|trim|length != 1 %}
-            {{ k }} must be a one character string: {{ v }}
+    {{ k }} must be a one character string:
+      {{ switch|to_nice_yaml|indent(width=2) }}
           {% endif %}
-        {% elif k in ('description', 'default', 'value') %}
-          {% if (v is not string and v is not int) %}
-            {{ k }} must be a string or int value: {{ v }}
+        {% elif k == 'default' %}
+          {% if switch.additive|default(false, true) %}
+            {% for i in (v|list if v is iterable else [v]) %}
+              {% if i is not integer and i|string|trim|length == 0 %}
+    {{ k }} must be a sequence of ints and/or non-empty strings:
+      {{ switch|to_nice_yaml|indent(width=2) }}
+              {% endif %}
+            {% endfor %}
+          {% elif v is not integer and v|string|trim|length == 0 %}
+    {{ k }} must be a sequence of ints and/or non-empty strings:
+      {{ switch|to_nice_yaml|indent(width=2) }}
+          {% endif %}
+        {% elif k in ('description', 'value') %}
+          {% if (v is not string and v is not integer) %}
+    {{ k }} must be a string or int value:
+      {{ switch|to_nice_yaml|indent(width=2) }}
           {% endif %}
         {% else %}
-          invalid key "{{ k }}" in switch:
-            {{ switch|to_nice_yaml }}
+    invalid key "{{ k }}" in switch:
+      {{ switch|to_nice_yaml|indent(width=2) }}
         {% endif %}
       {% endfor %}
     {% endfor %}
-    {% for dest, items in switches|groupby('dest', case_sensitive=True) %}
-      {% if items|length > 1 %}
-        duplicate dest "{{ dest }}" in switches:
-          {{ items|to_nice_yaml }}
+    {% for dest, items in switches|groupby('dest', default='', case_sensitive=True) %}
+      {% if items|length > 1 and flag != '' %}
+    duplicate dest "{{ dest }}" in switches:
+      {{ items|to_nice_yaml|indent(width=2) }}
       {% endif %}
     {% endfor %}
-    {% for flag, items in switches|groupby('flag', case_sensitive=True) %}
-      {% if items|length > 1 %}
-        duplicate flag value "{{ flag }}" in switches:
-          {{ items|to_nice_yaml }}
+    {% for flag, items in switches|groupby('flag', default='', case_sensitive=True) %}
+      {% if items|length > 1 and flag != '' %}
+    duplicate flag value "{{ flag }}" in switches:
+      {{ items|to_nice_yaml|indent(width=2) }}
       {% endif %}
       {% if flag == "h" and include_usage %}
-        flag "{{ flag }}" is not permitted in switches when include_usage is true:
-          {{ items|to_nice_yaml }}
+    flag "{{ flag }}" is not permitted in switches when include_usage is true:
+      {{ items|to_nice_yaml|indent(width=2) }}
       {% endif %}
     {% endfor %}
 
@@ -144,47 +163,66 @@ opts:
     {% for opt in opts %}
       {% for k in ('dest', 'flag') %}
         {% if k not in opt %}
-          {{ k }} key must be defined in opt:
-            {{ opt|to_nice_yaml}}
+    {{ k }} key must be defined in opt:
+      {{ opt|to_nice_yaml|indent(width=2) }}
         {% endif %}
       {% endfor %}
       {% for k, v in opt|items %}
         {% if k in ('additive', 'required') %}
           {% if v is not boolean %}
-            {{ k }} must be a boolean value: {{ v }}
+    {{ k }} must be a boolean value:
+      {{ opt|to_nice_yaml|indent(width=2) }}
           {% endif %}
         {% elif k == 'dest' %}
           {% if v is not string or v|trim|length == 0 %}
-            {{ k }} must be a non-empty string: {{ v }}
+    {{ k }} must be a non-empty string:
+      {{ opt|to_nice_yaml|indent(width=2) }}
           {% endif %}
         {% elif k == 'flag' %}
           {% if v is not string or v|trim|length != 1 %}
-            {{ k }} must be a one character string: {{ v }}
+    {{ k }} must be a one character string:
+      {{ opt|to_nice_yaml|indent(width=2) }}
           {% endif %}
-        {% elif k in ('description', 'default', 'value', 'metavar') %}
-          {% if (v is not string and v is not int) %}
-            {{ k }} must be a string or int value: {{ v }}
+        {% elif k == 'default' %}
+          {% if opt.required %}
+    {{ k }} cannot be set when opt is required:
+      {{ opt|to_nice_yaml|indent(width=2) }}
+          {% elif opt.additive|default(false, true) %}
+            {% for i in (v|list if v is iterable else [v]) %}
+              {% if i is not integer and i|string|trim|length == 0 %}
+    {{ k }} must be a sequence of ints and/or non-empty strings:
+      {{ opt|to_nice_yaml|indent(width=2) }}
+              {% endif %}
+            {% endfor %}
+          {% elif v is not integer and v|string|trim|length == 0 %}
+    {{ k }} must be a sequence of ints and/or non-empty strings:
+      {{ opt|to_nice_yaml|indent(width=2) }}
+          {% endif %}
+        {% elif k in ('description', 'value', 'metavar') %}
+          {% if (v is not string and v is not integer) %}
+    {{ k }} must be a string or int value:
+      {{ opt|to_nice_yaml|indent(width=2) }}
           {% endif %}
         {% else %}
-          invalid key "{{ k }}" in opt:
-            {{ opt|to_nice_yaml }}
+    invalid key "{{ k }}" in opt:
+      {{ opt|to_nice_yaml|indent(width=2) }}
         {% endif %}
       {% endfor %}
     {% endfor %}
-    {% for dest, items in (opts + switches)|groupby('dest', case_sensitive=True) %}
-      {% if items|length > 1 %}
-        duplicate dest value "{{ dest }}" in opts/switches:
-          {{ items|to_nice_yaml }}
+    {% for dest, items in (opts + switches)|groupby('dest', default='', case_sensitive=True) %}
+      {% if items|length > 1 and flag != '' %}
+    duplicate dest value "{{ dest }}" in opts/switches:
+      {{ items|to_nice_yaml|indent(width=2) }}
       {% endif %}
     {% endfor %}
-    {% for flag, items in (opts + switches)|groupby('flag', case_sensitive=True) %}
-      {% if items|length > 1 %}
-        duplicate flag value "{{ flag }}" in opts/switches:
-          {{ items|to_nice_yaml }}
+    {% for flag, items in (opts + switches)|groupby('flag', default='', case_sensitive=True) %}
+      {% if items|length > 1 and flag != '' %}
+    duplicate flag value "{{ flag }}" in opts/switches:
+      {{ items|to_nice_yaml|indent(width=2) }}
       {% endif %}
       {% if flag == "h" and include_usage %}
-        flag "{{ flag }}" is not permitted in opts when include_usage is true:
-          {{ items|to_nice_yaml }}
+    flag "{{ flag }}" is not permitted in opts when include_usage is true:
+      {{ items|to_nice_yaml|indent(width=2) }}
       {% endif %}
     {% endfor %}
 
