@@ -1,3 +1,14 @@
+{%
+	from 'derived-vars.jinja' import
+		optional_opts,
+		required_opts,
+		additive_flags,
+		options_metavars,
+		verbosity_switch,
+		has_opts,
+		getopts_str
+	with context
+%}
 {% if include_header %}
 {% include 'common-header.bash.jinja' %}
 {% endif %}

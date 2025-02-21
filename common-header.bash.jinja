@@ -6,4 +6,4 @@ trap 'e=$?; if [ "$e" -ne "0" ]; then printf "LINE %s: exit %s <- %s%s\\n" "$BAS
 
 
 PROGNAME="${0##*/}"
-VERBOSITY="${VERBOSITY:-}"
+VERBOSITY="${VERBOSITY:-{{ 'v' if not verbosity_switch }}}"

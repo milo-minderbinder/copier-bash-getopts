@@ -1,36 +1,3 @@
-{% set optional_opts = opts|rejectattr('required')|list %}
-{% set required_opts = opts|selectattr('required')|list %}
-{% set additive_flags = (switches + opts)|selectattr('additive')|map(attribute='flag')|list %}
-{% set options_metavars|replace('\n', '') %}
-{% if include_usage or switches %}
- [-
-{% if include_usage %}
-h
-{% endif -%}
-{% for switch in switches %}
-{{ switch.flag }}
-{% endfor -%}
-]
-{% endif -%}
-{% for opt in optional_opts %}
- [-{{ opt.flag }} {{ opt.metavar|default(opt.dest|upper) }}]
-{% endfor -%}
-{% for opt in required_opts %}
- -{{ opt.flag }} {{ opt.metavar|default(opt.dest|upper) }}
-{% endfor -%}
-{% if positional_args_metavars %}
- {{ positional_args_metavars.split()|join(' ') }}
-{% endif -%}
-{% endset %}
-{% set verbosity_switch=switches|selectattr('dest', 'eq', 'verbosity')|first %}
-{% set has_opts=[switches, opts, include_usage, verbosity_switch]|select|list|length > 0 %}
-{% set getopts_str|replace('\n', '') %}
-{% if include_usage -%}
-h
-{% endif -%}
-{{ switches|map(attribute='flag')|join }}
-{{ opts|map(attribute='flag')|batch(1)|map('batch', 2, ':')|map('map', 'join')|map('join')|join }}
-{% endset %}
 {{ function_name }}() {
 	{% if verbosity_switch %}
 	local OLD_VERBOSITY
@@ -85,7 +52,11 @@ h
 			${func_name}{{ options_metavars }}
 
 		DESCRIPTION
-			{{ description|wordwrap(width=78-(8*1), break_long_words=False)|indent(width='\t'*3, blank=True) }}
+			{{
+				description
+				|wordwrap(width=78-(8*1), break_long_words=False)
+				|indent(width='\t'*3, blank=True)
+			}}
 
 			The options are as follows:
 
@@ -124,22 +95,21 @@ h
 				{% endif %}
 
 			{% endfor %}
-			{% if max_positional_args != 0 and positional_args_help|trim|length > 0 %}
+			{% if max_positional_args != 0 and positional_args_help|join|trim|length > 0 %}
 			Positional Arguments:
 
-			{% for positional_arg_help
-				in (positional_args_help.splitlines()|map('trim')|join('\n')).split('\n\n')
-				if positional_arg_help
-			%}
+			{% for positional_arg_help in positional_args_help %}
 			{% set positional_arg_help=(positional_arg_help|trim).split(maxsplit=1) %}
 			{{
 				positional_arg_help
 				|join('\t' if positional_arg_help[0]|length < 8 else '\n')
 				|wordwrap(width=78-(8*1), break_long_words=False)
 				|indent(width='\t'*4, blank=True)
+				if positional_arg_help|length > 0
 			}}
 
-			{% endfor %}
+			{%endfor %}
+
 			{% endif %}
 EOF
 	}

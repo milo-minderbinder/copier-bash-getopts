@@ -1,0 +1,33 @@
+{% set optional_opts = opts|rejectattr('required')|list %}
+{% set required_opts = opts|selectattr('required')|list %}
+{% set additive_flags = (switches + opts)|selectattr('additive')|map(attribute='flag')|list %}
+{% set options_metavars|replace('\n', '') %}
+{% if include_usage or switches %}
+ [-
+{% if include_usage %}
+h
+{% endif -%}
+{% for switch in switches %}
+{{ switch.flag }}
+{% endfor -%}
+]
+{% endif -%}
+{% for opt in optional_opts %}
+ [-{{ opt.flag }} {{ opt.metavar|default(opt.dest|upper) }}]
+{% endfor -%}
+{% for opt in required_opts %}
+ -{{ opt.flag }} {{ opt.metavar|default(opt.dest|upper) }}
+{% endfor -%}
+{% if positional_args_metavars %}
+ {{ positional_args_metavars.split()|join(' ') }}
+{% endif -%}
+{% endset %}
+{% set verbosity_switch=switches|selectattr('dest', 'eq', 'verbosity')|first %}
+{% set has_opts=[switches, opts, include_usage, verbosity_switch]|select|list|length > 0 %}
+{% set getopts_str|replace('\n', '') %}
+{% if include_usage -%}
+h
+{% endif -%}
+{{ switches|map(attribute='flag')|join }}
+{{ opts|map(attribute='flag')|batch(1)|map('batch', 2, ':')|map('map', 'join')|map('join')|join }}
+{% endset %}

@@ -19,6 +19,7 @@ _exclude:
   # project specific:
   - 'common-header.bash'
   - 'common-functions.bash'
+  - 'derived-vars'
   - 'extra-functions.bash'
   - 'function.bash'
 
@@ -241,6 +242,7 @@ min_positional_args:
     {%- elif min_positional_args > max_positional_args and max_positional_args > 0 -%}
       min_positional_args cannot be > max_positional_args when max_positional_args > 0
     {%- endif -%}
+  when: '{{ max_positional_args != 0 }}'
 
 positional_args_metavars:
   type: str
@@ -261,10 +263,22 @@ positional_args_metavars:
   when: '{{ max_positional_args != 0 }}'
 
 positional_args_help:
-  type: str
+  type: yaml
   multiline: true
   default: |-
-    {{- positional_args_metavars|regex_findall('<[^>]+>|[\\w-]+')|unique(case_sensitive=True)|join(' \n\n') + ' ' -}}
+    {% for metavar in positional_args_metavars|regex_findall('<[^>]+>|[\\w-]+')|unique(case_sensitive=True) %}
+    - {{ metavar }} {{ '(optional) ' if loop.index > min_positional_args }}
+    {% endfor %}
+  validator: |-
+    {%- if not (positional_args_help is iterable and positional_args_help is not string) -%}
+    positional_args_help must be an array of non-empty strings
+    {%- else -%}
+    {%- for help in positional_args_help -%}
+    {%- if help is not string or (help|trim|length == 0) -%}
+    positional_args_help must be an array of non-empty strings
+    {%- endif -%}
+    {%- endfor -%}
+    {%- endif -%}
   when: '{{ max_positional_args != 0 }}'
 
 # num_opts:
