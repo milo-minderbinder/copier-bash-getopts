@@ -143,16 +143,4 @@ get_script_dir() {
 	SCRIPTDIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 	printf '%s\n' "${SCRIPTDIR}"
 }
-
-contains_value() {
-	local value
-	value="$1"
-	shift
-	for arg in "$@"; do
-		if [ "$value" == "$arg" ]; then
-			return 0
-		fi
-	done
-	return 1
-}
 {% endraw %}

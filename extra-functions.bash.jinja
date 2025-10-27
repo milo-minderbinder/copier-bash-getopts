@@ -1,3 +1,5 @@
+{% if 'ltrim_ws' in extra_functions %}
+
 ltrim_ws() {
 	local input
 	local smallest_lws
@@ -5,6 +7,8 @@ ltrim_ws() {
 	smallest_lws=$(printf '%s\n' "$input" | sed -e '/^[[:space:]]*$/d' -e 's/[^[:space:]].*$//' | sort | head -n 1 | wc -m)
 	printf '%s\n' "$input" | cut -c ${smallest_lws}-
 }
+{% endif %}
+{% if 'get_color' in extra_functions %}
 
 get_color() {
 	local color
@@ -32,6 +36,8 @@ get_color() {
 	esac
 	printf '%d\n' "$color"
 }
+{% endif %}
+{% if 'hl' in extra_functions %}
 
 hl() {
 	local fg
@@ -60,6 +66,8 @@ EOF
 	text="$2"
 	printf '%s%s%s\n' "${fg}${bg:-}" "$text" "$(tput sgr0)"
 }
+{% endif %}
+{% if 'xml_format' in extra_functions %}
 
 xml_format() {
 	local indent
@@ -75,6 +83,32 @@ xml_format() {
 	fi
 	cat "${1:--}" | sed -E 's/^[[:space:]]+//' | tr -d '\n' | XMLLINT_INDENT="$(printf "$indent")" xmllint --format - ;
 }
+{% endif %}
+{%  if 'ybase64_encode' in extra_functions %}
+
+ybase64_encode() {
+	python -c "$(cat <<- EOF
+	import sys
+	import base64
+	data = sys.stdin.buffer.read().strip()
+	print(base64.b64encode(data, altchars=b'._').replace(b'=', b'-').decode())
+EOF
+	)"
+}
+{% endif %}
+{%  if 'ybase64_decode' in extra_functions %}
+
+ybase64_decode() {
+	python -c "$(cat <<- EOF
+	import sys
+	import base64
+	data = sys.stdin.buffer.read().strip()
+	print(base64.b64decode(data.replace(b'-', b'='), altchars=b'._', validate=True).decode())
+EOF
+	)"
+}
+{% endif %}
+{% if 'add_to_path' in extra_functions %}
 
 add_to_path() {
 	local append
@@ -102,3 +136,18 @@ add_to_path() {
 		fi
 	done
 }
+{% endif %}
+{% if 'contains_value' in extra_functions %}
+
+contains_value() {
+	local value
+	value="$1"
+	shift
+	for arg in "$@"; do
+		if [ "$value" == "$arg" ]; then
+			return 0
+		fi
+	done
+	return 1
+}
+{% endif %}

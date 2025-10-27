@@ -67,10 +67,20 @@ include_common_functions:
   default: '{{ "yes" if function_name == "main" else "no" }}'
   help: 'Add common utility functions at top of script?'
 
-include_extra_functions:
-  type: bool
-  default: 'no'
-  help: 'Add extra utility functions at top of script?'
+extra_functions:
+  type: str
+  help: 'select extra utility functions to add at top of script:'
+  choices:
+    - ltrim_ws
+    - get_color
+    - hl
+    - xml_format
+    - ybase64_encode
+    - ybase64_decode
+    - add_to_path
+    - contains_value
+  multiselect: true
+  default: '[]'
 
 switches:
   type: yaml
